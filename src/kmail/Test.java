@@ -54,8 +54,15 @@ public class Test {
 	public static void display(Message[] messages) throws MessagingException {
 		long nowTime = (new Date()).getTime();
 
+		Flags flag = new Flags("asdasd");
+
 		for (int i = messages.length - 1; i >= 0; --i) {
 			Message m = messages[i];
+
+			m.getFlags().add(flag);
+			m.saveChanges();
+			
+			m.setFlags(flag, true);
 
 			// Get the subject of the email
 			// If null, set it to the empty string
@@ -78,10 +85,10 @@ public class Test {
 			}
 
 			Flags flags = m.getFlags();
-			String flagMessage = flags.contains(Flag.SEEN) ? "Seen" : "";
+			String flagMessage = flags.contains(Flag.SEEN) ? "Seen" : "Unseen";
 			flagMessage += flags.contains(Flag.RECENT) ? ", Recent" : "";
 
-			System.out.printf("%s | %13s - %s - %s%n", flagMessage, restrict(subject, 10), fromEmailMessage,
+			System.out.printf("%-6s | %-13s - %s - %s%n", flagMessage, restrict(subject, 10), fromEmailMessage,
 					sentDateMessage);
 		}
 	}
