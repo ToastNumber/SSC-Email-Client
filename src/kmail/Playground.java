@@ -107,6 +107,8 @@ public class Playground {
 	 * @param to
 	 *            a comma-separated list of email addresses to which to send the
 	 *            email
+	 * @param cc
+	 *            a comma-separated list of email addresses for the cc field.
 	 * @param subject
 	 *            the subject for the email
 	 * @param content
@@ -185,11 +187,11 @@ public class Playground {
 
 		store = session.getStore("imaps");
 		store.connect("imap.googlemail.com", username, password);
-		
+
 		Message[] messages = getInboxMessages(store);
 		display(messages);
 	}
-	
+
 	@Test
 	public void testChangeFlag() throws MessagingException {
 		String username = "k.m.playground55@googlemail.com";
@@ -200,9 +202,9 @@ public class Playground {
 
 		store = session.getStore("imaps");
 		store.connect("imap.googlemail.com", username, password);
-		
+
 		Message[] messages = getInboxMessages(store);
-		
+
 		for (int i = 0; i < messages.length; ++i) {
 			messages[i].setFlag(Flag.SEEN, i % 2 == 0);
 		}
