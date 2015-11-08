@@ -6,12 +6,14 @@ import java.util.Properties;
 
 import javax.mail.Address;
 import javax.mail.Flags;
+import javax.mail.Flags.Flag;
+import javax.mail.BodyPart;
 import javax.mail.Folder;
 import javax.mail.Message;
 import javax.mail.MessagingException;
+import javax.mail.Multipart;
 import javax.mail.Session;
 import javax.mail.Store;
-import javax.mail.Flags.Flag;
 import javax.mail.internet.InternetAddress;
 import javax.mail.search.SearchTerm;
 
@@ -40,12 +42,30 @@ public class Grabber {
 	
 	public Message[] search(String keyword) throws MessagingException {
 		Folder folder = store.getFolder("inbox");
+		if (!folder.isOpen()) folder.open(Folder.READ_ONLY);
+		
 		SearchTerm st = new SearchTerm() {
 
 			@Override
 			public boolean match(Message m) {
 				try {
-					return m.getContent().toString().contains(keyword) || m.getSubject().contains(keyword);
+					if (m.getSubject().contains(keyword)) return true;
+					else {
+						if (m.getContentType().contains("TEXT/PLAIN")) {
+							return m.getContent().toString().contains(keyword);
+						} else {
+							// How to get parts from multiple body parts of MIME message
+							Multipart multipart = (Multipart) m.getContent();
+
+							for (int i = 0; i < multipart.getCount(); i++) {
+								BodyPart bodyPart = multipart.getBodyPart(i);
+								// If the part is a plain text message, then print it out.
+								if (bodyPart.getContentType().contains("TEXT/PLAIN")) {
+									if (bodyPart.getContent().toString().contains(keyword)) return true;
+								}
+							}
+						}
+					}
 				} catch (IOException e) {
 					e.printStackTrace();
 				} catch (MessagingException e) {
@@ -75,7 +95,17 @@ public class Grabber {
 	
 	public static String getFrom(Message m) throws MessagingException {
 		Address[] froms = m.getFrom();
-		return froms == null ? null : ((InternetAddress) froms[0]).getPersonal();
+		
+		if (froms == null) return "";
+		else {
+			String personal = ((InternetAddress) froms[0]).getPersonal();
+			String address = ((InternetAddress) froms[0]).getAddress();
+			
+			if (personal == null) {
+				if (address == null) return "";
+				else return address;
+			} else return personal;
+		}
 	}
 	
 	public static String getDateSent(Message m) throws MessagingException {
@@ -94,6 +124,12 @@ public class Grabber {
 		}
 
 		return sentDateString;
+	}
+	
+	public static String getFullDate(Message m) throws MessagingException {
+		Date sentDate = m.getSentDate();
+		if (sentDate == null) return "";
+		else return String.format("%1$ta %1$td/%1$tm/%1$tY %1$tH:%1$tM", m.getSentDate());
 	}
 	
 	public static boolean isSeen(Message m) throws MessagingException {

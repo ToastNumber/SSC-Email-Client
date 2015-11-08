@@ -1,6 +1,7 @@
 package kmail.ops;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Properties;
 
 import javax.activation.DataHandler;
@@ -17,7 +18,18 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 
+import kmail.auth.Authorisation;
+
 public class Sender {
+	private Session session;
+	private static final String SMTP_HOST = "smtp.gmail.com";
+	private Authorisation auth;
+	
+	public Sender(Authorisation auth) {
+		this.auth = auth;
+		this.session = getSMTPSession();
+	}
+	
 	/**
 	 * @param session
 	 * @param from
@@ -37,30 +49,41 @@ public class Sender {
 	 * @throws AddressException
 	 * @throws MessagingException
 	 */
-	public static MimeMessage constructMimeMessage(Session session, String from, String to, String cc,
-			String subject, String content, File attachment) throws AddressException, MessagingException {
+	public MimeMessage constructMimeMessage(String to, String cc,
+			String subject, String content, File[] attachments) throws AddressException, MessagingException {
 		MimeMessage message = new MimeMessage(session);
-		message.setFrom(new InternetAddress(from));
+		
+		message.setFrom(new InternetAddress(auth.getUsername()));
 
 		message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
 		if (cc.length() > 0) message.setRecipients(Message.RecipientType.CC, InternetAddress.parse(cc));
 
 		message.setSubject(subject);
 
-		if (attachment == null) {
+		
+		if (attachments == null) {
 			message.setText(content);
 		} else {
 			MimeBodyPart messageBodyPart = new MimeBodyPart();
 			messageBodyPart.setText(content);
 
-			DataSource attachmentSource = new FileDataSource(attachment);
-			MimeBodyPart attachmentBodyPart = new MimeBodyPart();
-			attachmentBodyPart.setDataHandler(new DataHandler(attachmentSource));
-			attachmentBodyPart.setFileName(attachment.getName());
-
+			ArrayList<MimeBodyPart> attachmentsBodyParts = new ArrayList<>();
+			
+			for (File f : attachments) {
+				DataSource attachmentSource = new FileDataSource(f);
+				MimeBodyPart attachmentBodyPart = new MimeBodyPart();
+				attachmentBodyPart.setDataHandler(new DataHandler(attachmentSource));
+				attachmentBodyPart.setFileName(f.getName());
+				
+				attachmentsBodyParts.add(attachmentBodyPart);
+			}
+			
 			Multipart multipart = new MimeMultipart();
 			multipart.addBodyPart(messageBodyPart);
-			multipart.addBodyPart(attachmentBodyPart);
+			
+			for (MimeBodyPart c : attachmentsBodyParts) {
+				multipart.addBodyPart(c);
+			}
 
 			message.setContent(multipart);
 		}
@@ -70,19 +93,18 @@ public class Sender {
 		return message;
 	}
 	
-	public static void sendEmail(Session session, String smtpHost, String username, String password,
-			MimeMessage message) throws MessagingException {
+	public void sendEmail(MimeMessage message) throws MessagingException {
 		Transport tr = session.getTransport("smtp");
-		tr.connect(smtpHost, username, password);
+		tr.connect(SMTP_HOST, auth.getUsername(), auth.getPassword());
 		tr.sendMessage(message, message.getAllRecipients());
 		tr.close();
 	}
 	
-	public Session getSMTPSession(String username, String password, String smtpHost) {
+	private Session getSMTPSession() {
 		Properties props = System.getProperties();
 		props.put("mail.smtp.auth", "true");
 		props.put("mail.smtp.starttls.enable", "true");
-		props.put("mail.smtp.host", smtpHost);
+		props.put("mail.smtp.host", SMTP_HOST);
 		props.put("mail.smtp.port", "587");
 
 		return Session.getDefaultInstance(props);

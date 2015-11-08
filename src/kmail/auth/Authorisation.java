@@ -2,7 +2,7 @@ package kmail.auth;
 
 
 public class Authorisation {
-	public final String username;
+	private final String username;
 	private final String password;
 
 	public Authorisation(String username, String password) {
