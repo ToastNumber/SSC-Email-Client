@@ -257,7 +257,7 @@ public class InboxWindow extends JFrame {
 	private void addFilter(Filter filter) {
 		filters.add(filter);
 
-		File f = new File("filter-rules.txt");
+		File f = new File(KMailClient.FILTER_FILE_PATH);
 
 		try {
 			PrintWriter writer = new PrintWriter(new FileWriter(f, true));
