@@ -13,6 +13,7 @@ public class KMailClient {
 	 * code for the password dialog
 	 */
 	PasswordDialog pDialog;
+	public static final String FILTER_FILE_PATH = "res/filter-rules.txt";
 	
 	public KMailClient() {
 		restart();

@@ -236,7 +236,7 @@ public class InboxWindow extends JFrame {
 	private void loadFiltersFromFile() {
 		filters = new ArrayList<Filter>();
 
-		File f = new File("filter-rules.txt");
+		File f = new File(KMailClient.FILTER_FILE_PATH);
 		if (!f.exists()) return;
 		else {
 			try {
