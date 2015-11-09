@@ -1,4 +1,4 @@
-package kmail.ops;
+package kmail;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -107,6 +107,6 @@ public class Sender {
 		props.put("mail.smtp.host", SMTP_HOST);
 		props.put("mail.smtp.port", "587");
 
-		return Session.getDefaultInstance(props);
+		return Session.getInstance(props);
 	}
 }

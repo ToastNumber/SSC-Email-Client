@@ -1,6 +1,5 @@
 package kmail;
 
-
 public class Util {
 	/**
 	 * Restricts the given string to the given length and appends "..." <br>
@@ -13,37 +12,52 @@ public class Util {
 	 * @return the restricted string
 	 */
 	public static String restrict(String s, int length) {
-		if (s.length() <= length) return s;
+		if (s.length() <= length)
+			return s;
 		else {
 			return s.substring(0, length) + "...";
 		}
 	}
 
-	public static String constructMessageStrip(String from, String subject, String time, boolean read) {
+	public static String constructMessageStrip(String from, String subject,
+			String time, boolean read, String[] flags) {
 		String text = "<html>";
 
 		if (read) {
-			text += String.format("<span style='font-family: arial'>%s</span>", from);
-			text += String.format("<span style='font-family: arial'> - <i>%s</i> </span>", time);
+			text += String.format("<span style='font-family: arial'>%s</span>",
+					from);
+			text += String.format(
+					"<span style='font-family: arial'> - <i>%s</i> </span>",
+					time);
 		} else {
-			text += String.format("<span style='font-family: arial'><b>%s</b></span>", from);
-			text += String.format("<span style='font-family: arial'> - <b><i>%s</i></b> </span>", time);	
+			text += String.format(
+					"<span style='font-family: arial'><b>%s</b></span>", from);
+			text += String
+					.format("<span style='font-family: arial'> - <b><i>%s</i></b> </span>",
+							time);
 		}
-		
+
 		text += "<br>";
-		text += String.format("<span style='font-family: arial'>%s</span><br>", subject);
+		text += String.format("<span style='font-family: arial'>%s</span>",
+				subject);
+
+		for (int i = 0; i < flags.length; ++i) {
+			text += String
+					.format(" <span style='font-family: courier'><b><i>[%s]</i><b></span>",
+							flags[i]);
+		}
 
 		text += "</html>";
 
 		return text;
 	}
-	
+
 	public static <T> void reverse(T[] arr) {
-		for (int i = 0, j = arr.length - 1; i < arr.length/2; ++i, --j) {
+		for (int i = 0, j = arr.length - 1; i < arr.length / 2; ++i, --j) {
 			T temp = arr[i];
 			arr[i] = arr[j];
 			arr[j] = temp;
 		}
 	}
-	
+
 }

@@ -19,8 +19,8 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 
+import kmail.Sender;
 import kmail.auth.Authorisation;
-import kmail.ops.Sender;
 
 import com.jgoodies.forms.layout.ColumnSpec;
 import com.jgoodies.forms.layout.FormLayout;
@@ -122,6 +122,7 @@ public class SendWindow extends JFrame {
 		
 		fldBody = new JTextArea();
 		fldBody.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+		fldBody.setLineWrap(true);
 		contentPane.add(fldBody, "4, 12, fill, fill");
 		btnSend.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {

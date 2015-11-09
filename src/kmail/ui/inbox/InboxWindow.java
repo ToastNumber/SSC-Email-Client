@@ -1,12 +1,17 @@
 package kmail.ui.inbox;
 
 import java.awt.BorderLayout;
-import java.awt.EventQueue;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
 
 import javax.mail.BodyPart;
 import javax.mail.Message;
@@ -17,6 +22,7 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
@@ -27,17 +33,22 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
+import kmail.Filter;
+import kmail.Grabber;
 import kmail.Util;
 import kmail.auth.Authorisation;
-import kmail.ops.Grabber;
+import kmail.ui.KMailClient;
 import kmail.ui.send.SendWindow;
 
 public class InboxWindow extends JFrame {
 
+	private Grabber grabber;
+	private SendWindow sendWindow;
+	private ArrayList<Filter> filters;
+
 	private JSplitPane splitPane;
 	private JPanel contentPane;
 	private Message[] messages;
-	private Grabber grabber;
 	private DefaultListModel<String> model = new DefaultListModel<>();
 	private JList<String> messageList;
 	private boolean refreshing = false;
@@ -52,33 +63,15 @@ public class InboxWindow extends JFrame {
 	private JButton btnFilterOptions;
 	private JButton btnLogout;
 	private JButton btnCompose;
-	
-	/**
-	 * Launch the application.
-	 */
-	public static void main(String[] args) {
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					String username = "k.m.playground55@googlemail.com";
-					String password = "asdasd123$";
-					Authorisation auth = new Authorisation(username, password);
-
-					InboxWindow frame = new InboxWindow(auth);
-					frame.setVisible(true);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		});
-	}
 
 	/**
 	 * Create the frame.
-	 * @throws MessagingException 
+	 * 
+	 * @throws MessagingException
 	 */
-	public InboxWindow(Authorisation auth) throws MessagingException {
+	public InboxWindow(KMailClient handler, Authorisation auth) throws MessagingException {
 		this.grabber = new Grabber(auth);
+		loadFiltersFromFile();
 
 		setTitle("KMail");
 
@@ -111,9 +104,9 @@ public class InboxWindow extends JFrame {
 			@Override
 			public void valueChanged(ListSelectionEvent e) {
 				if (refreshing) return;
-				
+
 				int index = messageList.getSelectedIndex();
-				
+
 				try {
 					displayMessageContent(index);
 					refreshMessageStrip(index);
@@ -122,10 +115,10 @@ public class InboxWindow extends JFrame {
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
-				
+
 			}
 		});
-		
+
 		panel = new JPanel();
 		contentPane.add(panel, BorderLayout.SOUTH);
 		panel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
@@ -137,7 +130,12 @@ public class InboxWindow extends JFrame {
 		fldSearch.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				try {
-					filterInbox(fldSearch.getText());
+					String s = fldSearch.getText();
+					if (s.isEmpty()) {
+						refreshInbox();
+					} else {
+						filterInbox(s);
+					}
 				} catch (MessagingException e1) {
 					e1.printStackTrace();
 				}
@@ -148,17 +146,20 @@ public class InboxWindow extends JFrame {
 		btnCompose = new JButton("Compose");
 		btnCompose.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				SendWindow sendWindow = new SendWindow(auth);
+				sendWindow = new SendWindow(auth);
 				sendWindow.setVisible(true);
 			}
 		});
 		btnCompose.setFocusable(false);
 		panel.add(btnCompose);
-		
+
 		btnRead = new JButton("Unread/Read");
 		btnRead.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				int index = messageList.getSelectedIndex();
+
+				if (index < 0) return;
+
 				try {
 					Grabber.toggleSeen(messages[index]);
 					refreshMessageStrip(index);
@@ -176,7 +177,6 @@ public class InboxWindow extends JFrame {
 				try {
 					refreshInbox();
 				} catch (MessagingException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
 			}
@@ -185,14 +185,47 @@ public class InboxWindow extends JFrame {
 		panel.add(btnRefresh);
 
 		btnFilterOptions = new JButton("Filter Options");
+		btnFilterOptions.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String input = JOptionPane.showInputDialog("Enter filter", "<flag>: <keyword>, <keyword>, ...");
+				if (input == null) return;
+				else {
+					Filter filter = Filter.parse(input);
+
+					if (filter == null) {
+						JOptionPane.showMessageDialog(null,
+								"Please enter a filter in the form <flag>: <keyword>, <keyword>, ... \n(Be careful with spaces");
+					} else {
+						try {
+							grabber.applyCustomFilter(filter);
+							addFilter(filter);
+							refreshInbox();
+						} catch (MessagingException e1) {
+							e1.printStackTrace();
+						}
+					}
+				}
+			}
+		});
 		btnFilterOptions.setFocusable(false);
 		panel.add(btnFilterOptions);
 
 		btnLogout = new JButton("Logout");
+		btnLogout.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				try {
+					grabber.close();
+					if (sendWindow != null) sendWindow.dispose();
+					dispose();
+					handler.restart();
+				} catch (MessagingException ex) {
+					ex.printStackTrace();
+				}
+			}
+		});
 		btnLogout.setFocusable(false);
 		panel.add(btnLogout);
 
-		/************ FINAL OPERATIONS **************/
 		try {
 			refreshInbox();
 		} catch (MessagingException e1) {
@@ -200,61 +233,91 @@ public class InboxWindow extends JFrame {
 		}
 	}
 
+	private void loadFiltersFromFile() {
+		filters = new ArrayList<Filter>();
+
+		File f = new File("filter-rules.txt");
+		if (!f.exists()) return;
+		else {
+			try {
+				BufferedReader reader = new BufferedReader(new FileReader(f));
+
+				String line;
+				while ((line = reader.readLine()) != null) {
+					filters.add(Filter.parse(line));
+				}
+
+				reader.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	private void addFilter(Filter filter) {
+		filters.add(filter);
+
+		File f = new File("filter-rules.txt");
+
+		try {
+			PrintWriter writer = new PrintWriter(new FileWriter(f, true));
+			writer.println(filter.toString());
+			writer.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
 	private void refreshInbox() throws MessagingException {
+		grabber.applyFiltersToUnseen(filters);
 		filterInbox("");
 		fldSearch.setText("");
 	}
-	
+
 	private void filterInbox(String keyword) throws MessagingException {
 		refreshing = true;
-		
+
 		if (keyword.isEmpty()) {
 			messages = grabber.getInboxMessages();
 		} else {
-			messages = grabber.search(keyword);
+			messages = grabber.search(keyword, true);
 		}
 
 		this.messageList.clearSelection();
-		
+
 		model.clear();
 		model.setSize(messages.length);
-		
+
 		for (int i = 0; i < messages.length; ++i) {
 			refreshMessageStrip(i);
 		}
-		
-		refreshing = false;		
+
+		refreshing = false;
 	}
-	
+
 	private void refreshMessageStrip(int i) throws MessagingException {
 		Message m = messages[i];
-		
+
 		String from = Grabber.getFrom(m);
 		String subject = Grabber.getSubject(m);
 		String dateSent = Grabber.getDateSent(m);
 		boolean seen = Grabber.isSeen(m);
-		
-		model.set(i, Util.constructMessageStrip(from, subject, dateSent, seen));
+
+		String[] userFlags = m.getFlags().getUserFlags();
+		model.set(i, Util.constructMessageStrip(from, subject, dateSent, seen, userFlags));
 	}
 
-	private void displayMessageContent(int index)
-			throws MessagingException, IOException {
+	private void displayMessageContent(int index) throws MessagingException, IOException {
 		Message message = messages[index];
 
-		String svar = String.format(
-				"<html>"
-				+ "<h1 style='font-family: helvetica'>%s</h1>"
-				+ "<p style='font-family: arial'>From: %s</p>"
-				+ "<p style='font-family: arial'>Received: %s</p>"
-				+ "<br>"
-				+ "<hr size=2>"
-				+ "<br>",
-				Grabber.getSubject(message), Grabber.getFrom(message), Grabber.getFullDate(message));
+		String svar = String.format("<html>" + "<h1 style='font-family: helvetica'>%s</h1>" + "<p style='font-family: arial'>From: %s</p>"
+				+ "<p style='font-family: arial'>Received: %s</p>" + "<br>" + "<hr size=2>" + "<br>", Grabber.getSubject(message),
+				Grabber.getFrom(message), Grabber.getFullDate(message));
 
 		svar += "<span style='font-family: arial'>";
-		
+
 		if (message.getContentType().contains("TEXT/PLAIN")) {
-			svar += "" + message.getContent();
+			svar += message.getContent().toString().replaceAll("\n", "<br>");
 		} else {
 			// How to get parts from multiple body parts of MIME message
 			Multipart multipart = (Multipart) message.getContent();
@@ -268,12 +331,11 @@ public class InboxWindow extends JFrame {
 				}
 			}
 		}
-		
+
 		svar += "</span></html>";
 
 		txtMessageContent.setText(svar);
 		txtMessageContent.setCaretPosition(0);
 	}
-	
 
 }
