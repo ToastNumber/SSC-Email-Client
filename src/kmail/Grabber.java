@@ -1,18 +1,15 @@
 package kmail;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Properties;
 
 import javax.mail.Address;
-import javax.mail.BodyPart;
 import javax.mail.Flags;
 import javax.mail.Flags.Flag;
 import javax.mail.Folder;
 import javax.mail.Message;
 import javax.mail.MessagingException;
-import javax.mail.Multipart;
 import javax.mail.Session;
 import javax.mail.Store;
 import javax.mail.internet.InternetAddress;
@@ -166,58 +163,19 @@ public class Grabber {
 	 *            the keyword to find
 	 * @return <b>true</b> if the message contains the keyword<br>
 	 *         <b>false</b> otherwise
+	 * @throws MessagingException 
 	 */
-	private boolean searchMessage(Message m, String keyword) {
-		// Convert the keyword to lowercase for normalised searching
-		final String lowerKeyword = keyword.toLowerCase();
-
-		try {
-			// Save the seen-state of the message, as the
-			// following code will change its seen-state to true.
-			Flags flags = m.getFlags();
-			boolean seen = flags.contains(Flag.SEEN);
-
-			boolean svar = false;
-
-			// If the subject contains the keyword then set the result to true.
-			if (m.getSubject().toLowerCase().contains(lowerKeyword)) {
-				svar = true;
-			} else {
-				// If the content type if plain text then
-				if (m.getContentType().toUpperCase().contains("TEXT/PLAIN")) {
-					// Directly check if the content contains the keyword
-					svar = m.getContent().toString().toLowerCase().contains(lowerKeyword);
-				} else {
-					// Get all parts of the email
-					Multipart multipart = (Multipart) m.getContent();
-
-					// Go through each part
-					for (int i = 0; i < multipart.getCount(); i++) {
-						BodyPart bodyPart = multipart.getBodyPart(i);
-						// If the current body part is plain text then
-						if (bodyPart.getContentType().toUpperCase().contains("TEXT/PLAIN")) {
-							// Directly check if the content contains the
-							// keyword
-							if (bodyPart.getContent().toString().toLowerCase().contains(lowerKeyword)) {
-								svar = true;
-							}
-						}
-					}
-				}
-			}
-
-			// Reset the seen-state of the message
-			m.setFlag(Flag.SEEN, seen);
-
-			return svar;
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (MessagingException e) {
-			e.printStackTrace();
-		}
-
-		// If there was an exception, just return false.
-		return false;
+	private boolean searchMessage(Message m, String keyword) throws MessagingException {
+		boolean seen = (m.getFlags()).contains(Flag.SEEN);
+		
+		BodyTerm bodyTerm = new BodyTerm(keyword);
+		HeaderTerm headerTerm = new HeaderTerm("", keyword);
+		OrTerm orTerm = new OrTerm(bodyTerm, headerTerm);
+		boolean svar = m.match(orTerm);
+		
+		m.setFlag(Flag.SEEN, seen);
+		
+		return svar;
 	}
 
 	/**
