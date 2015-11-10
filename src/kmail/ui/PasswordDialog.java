@@ -95,8 +95,10 @@ public class PasswordDialog extends JDialog implements KeyListener {
             	String password = new String(jpfPassword.getPassword());
             	
             	try {
+            		// Let the KMailClient login
         			handler.login(username, password);
         		} catch (MessagingException e1) {
+        			// This can happen e.g. when Gmail requires an application specific password
         			if (e1.getLocalizedMessage().startsWith("[ALERT]")) {
         				JOptionPane.showMessageDialog(null, e1.getLocalizedMessage());
         			} else {
