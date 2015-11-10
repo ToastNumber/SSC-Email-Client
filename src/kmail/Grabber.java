@@ -16,7 +16,9 @@ import javax.mail.Multipart;
 import javax.mail.Session;
 import javax.mail.Store;
 import javax.mail.internet.InternetAddress;
+import javax.mail.search.BodyTerm;
 import javax.mail.search.HeaderTerm;
+import javax.mail.search.OrTerm;
 import javax.mail.search.SearchTerm;
 
 import kmail.auth.Authorisation;
@@ -147,14 +149,14 @@ public class Grabber {
 	 * @throws MessagingException
 	 */
 	public Message[] search(String keyword) throws MessagingException {
-		SearchTerm st = new SearchTerm() {
-			@Override
-			public boolean match(Message m) {
-				return searchMessage(m, keyword);
-			}
-		};
-
-		return inbox.search(st);
+		BodyTerm bodyTerm = new BodyTerm(keyword);
+		HeaderTerm headerTerm = new HeaderTerm("", keyword);
+		OrTerm orTerm = new OrTerm(bodyTerm, headerTerm);
+		
+		Message[] svar = inbox.search(orTerm);
+		Util.reverse(svar);
+		
+		return svar; 
 	}
 
 	/**
@@ -165,7 +167,7 @@ public class Grabber {
 	 * @return <b>true</b> if the message contains the keyword<br>
 	 *         <b>false</b> otherwise
 	 */
-	public boolean searchMessage(Message m, String keyword) {
+	private boolean searchMessage(Message m, String keyword) {
 		// Convert the keyword to lowercase for normalised searching
 		final String lowerKeyword = keyword.toLowerCase();
 
