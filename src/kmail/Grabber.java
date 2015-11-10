@@ -1,18 +1,15 @@
 package kmail;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Properties;
 
 import javax.mail.Address;
-import javax.mail.BodyPart;
 import javax.mail.Flags;
 import javax.mail.Flags.Flag;
 import javax.mail.Folder;
 import javax.mail.Message;
 import javax.mail.MessagingException;
-import javax.mail.Multipart;
 import javax.mail.Session;
 import javax.mail.Store;
 import javax.mail.internet.InternetAddress;
@@ -95,97 +92,35 @@ public class Grabber {
 	 * @throws MessagingException
 	 */
 	public void applyFiltersToUnseen(ArrayList<Filter> filters) throws MessagingException {
-		long t0 = System.currentTimeMillis();
-
+		// Helps to make sure the inbox refreshes properly
 		inbox.expunge();
-		
+
+		// A search term to find the unseen emails
 		FlagTerm unseenSearch = new FlagTerm(new Flags(Flag.SEEN), false);
-		
+
 		for (Filter filter : filters) {
+			// Create a custom flag for this filter
 			Flags customFlag = new Flags(filter.getFlagName());
-			
+
 			String[] keywords = filter.getKeywords();
 			AndTerm[] andTerms = new AndTerm[keywords.length];
-			
+
 			for (int i = 0; i < keywords.length; ++i) {
 				HeaderTerm headerTerm = new HeaderTerm("", keywords[i]);
 				BodyTerm bodyTerm = new BodyTerm(keywords[i]);
-				
+
+				// Create a search term for each keyword to find an unseen email
+				// with this keyword
 				andTerms[i] = new AndTerm(unseenSearch, new OrTerm(headerTerm, bodyTerm));
 			}
-			
+
+			// Combine all the search terms together
 			OrTerm searchTerm = new OrTerm(andTerms);
-			
+
 			Message[] relevantMessages = inbox.search(searchTerm);
-			
+			// Give each message the custom flag
 			inbox.setFlags(relevantMessages, customFlag, true);
 		}
-		
-		
-		long t1 = System.currentTimeMillis();
-		System.out.println((t1 - t0) / 1000.);
-	}
-
-
-	/**
-	 * Searchs the message for the keyword. Note: the seen-state of the message
-	 * is preserved.
-	 * 
-	 * @param m
-	 *            the message to be searched
-	 * @param keyword
-	 *            the keyword to find
-	 * @return <b>true</b> if the message contains the keyword<br>
-	 *         <b>false</b> otherwise
-	 */
-	public boolean searchMessage(Message m, String keyword) {
-		// Convert the keyword to lowercase for searching
-		final String lowerKeyword = keyword.toLowerCase();
-
-		try {
-			Flags flags = m.getFlags();
-			boolean seen = flags.contains(Flag.SEEN);
-			boolean svar = false;
-
-			// If the subject contains the keyword
-			if (m.getSubject().toLowerCase().contains(lowerKeyword)) {
-				// Then set the result to true
-				svar = true;
-			} else {
-				// If the content is plain text
-				if (m.getContentType().toUpperCase().contains("TEXT/PLAIN")) {
-					// Then just check if it contains the keyword
-					svar = m.getContent().toString().toLowerCase().contains(lowerKeyword);
-				} else {
-					// Get the different parts of the content
-					Multipart multipart = (Multipart) m.getContent();
-
-					for (int i = 0; i < multipart.getCount(); i++) {
-						BodyPart bodyPart = multipart.getBodyPart(i);
-
-						// If the current part of the message is plain text
-						if (bodyPart.getContentType().toUpperCase().contains("TEXT/PLAIN")) {
-							// Then check if it contains the keyword
-							if (bodyPart.getContent().toString().toLowerCase().contains(lowerKeyword)) {
-								svar = true;
-							}
-						}
-					}
-				}
-			}
-
-			// Reset the seen-state of the message
-			m.setFlag(Flag.SEEN, seen);
-
-			return svar;
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (MessagingException e) {
-			e.printStackTrace();
-		}
-
-		// If there was an exception, just return false.
-		return false;
 	}
 
 	/**

@@ -141,6 +141,8 @@ public class SendWindow extends JFrame {
 					// Close the window and dipose it
 					setVisible(false);
 					dispose();
+				} catch (NullPointerException e1) {
+					JOptionPane.showMessageDialog(null, "There was an error. Please check the information you have entered and try again.");
 				} catch (AddressException e1) {
 					JOptionPane.showMessageDialog(null, "Make sure you enter valid email addresses.");
 				} catch (MessagingException e1) {

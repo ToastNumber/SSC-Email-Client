@@ -19,7 +19,7 @@ spam: lucky winner, x factor
 uni: university of birmingham
 ```
 
-which would indicate that emails containing `lucky winner` or `x factor` would be flagged as `spam`, and emails containing `university of birmingham` would be flagged as `uni`. The user can choose whether to actively apply these flags by clciking the `Scan New Emails` check box.
+which would indicate that emails containing `lucky winner` or `x factor` would be flagged as `spam`, and emails containing `university of birmingham` would be flagged as `uni`.
 
 Naming Convention
 -----------------
