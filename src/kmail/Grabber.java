@@ -1,15 +1,18 @@
 package kmail;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Properties;
 
 import javax.mail.Address;
+import javax.mail.BodyPart;
 import javax.mail.Flags;
 import javax.mail.Flags.Flag;
 import javax.mail.Folder;
 import javax.mail.Message;
 import javax.mail.MessagingException;
+import javax.mail.Multipart;
 import javax.mail.Session;
 import javax.mail.Store;
 import javax.mail.internet.InternetAddress;
@@ -91,12 +94,12 @@ public class Grabber {
 	 * @throws MessagingException
 	 */
 	public void applyFiltersToUnseen(ArrayList<Filter> filters) throws MessagingException {
+		long t0 = System.currentTimeMillis();
+
 		Message[] unseenMessages = inbox.search(new SearchTerm() {
 			@Override
 			public boolean match(Message m) {
 				try {
-					// Check if the flags for this message contains the seen
-					// flag.
 					Flags flags = m.getFlags();
 					return !flags.contains(Flag.SEEN);
 				} catch (MessagingException e) {
@@ -107,24 +110,72 @@ public class Grabber {
 			}
 		});
 
-		// Go through each of the filters
 		for (Filter filter : filters) {
-			// Create a Flags object for the filter name
 			Flags customFlag = new Flags(filter.getFlagName());
 			String[] keywords = filter.getKeywords();
 
-			// Now go through each of the unseen messages
 			for (Message msg : unseenMessages) {
-				// And for each keyword
 				for (String keyword : keywords) {
-					// Check if the message contains that keyword
 					if (searchMessage(msg, keyword)) {
-						// And if it does, then give it the flag.
 						msg.setFlags(customFlag, true);
 					}
 				}
 			}
 		}
+
+		long t1 = System.currentTimeMillis();
+		System.out.println((t1 - t0) / 1000.);
+	}
+
+	/**
+	 * Searchs the message for the keyword. Note: the seen-state of the message
+	 * is preserved.
+	 * 
+	 * @param m
+	 *            the message to be searched
+	 * @param keyword
+	 *            the keyword to find
+	 * @return <b>true</b> if the message contains the keyword<br>
+	 *         <b>false</b> otherwise
+	 */
+	public boolean searchMessage(Message m, String keyword) {
+		final String lowerKeyword = keyword.toLowerCase();
+
+		try {
+			Flags flags = m.getFlags();
+			boolean seen = flags.contains(Flag.SEEN);
+			boolean svar = false;
+
+			if (m.getSubject().toLowerCase().contains(lowerKeyword)) {
+				svar = true;
+			} else {
+				if (m.getContentType().toUpperCase().contains("TEXT/PLAIN")) {
+					svar = m.getContent().toString().toLowerCase().contains(lowerKeyword);
+				} else {
+					// How to get parts from multiple body parts of MIME message
+					Multipart multipart = (Multipart) m.getContent();
+
+					for (int i = 0; i < multipart.getCount(); i++) {
+						BodyPart bodyPart = multipart.getBodyPart(i);
+						// If the part is a plain text message, then print it
+						// out.
+						if (bodyPart.getContentType().toUpperCase().contains("TEXT/PLAIN")) {
+							if (bodyPart.getContent().toString().toLowerCase().contains(lowerKeyword)) svar = true;
+						}
+					}
+				}
+			}
+
+			m.setFlag(Flag.SEEN, seen);
+
+			return svar;
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (MessagingException e) {
+			e.printStackTrace();
+		}
+
+		return false;
 	}
 
 	/**
@@ -149,32 +200,10 @@ public class Grabber {
 		BodyTerm bodyTerm = new BodyTerm(keyword);
 		HeaderTerm headerTerm = new HeaderTerm("", keyword);
 		OrTerm orTerm = new OrTerm(bodyTerm, headerTerm);
-		
+
 		Message[] svar = inbox.search(orTerm);
 		Util.reverse(svar);
-		
-		return svar; 
-	}
 
-	/**
-	 * @param m
-	 *            the message to be searched
-	 * @param keyword
-	 *            the keyword to find
-	 * @return <b>true</b> if the message contains the keyword<br>
-	 *         <b>false</b> otherwise
-	 * @throws MessagingException 
-	 */
-	private boolean searchMessage(Message m, String keyword) throws MessagingException {
-		boolean seen = (m.getFlags()).contains(Flag.SEEN);
-		
-		BodyTerm bodyTerm = new BodyTerm(keyword);
-		HeaderTerm headerTerm = new HeaderTerm("", keyword);
-		OrTerm orTerm = new OrTerm(bodyTerm, headerTerm);
-		boolean svar = m.match(orTerm);
-		
-		m.setFlag(Flag.SEEN, seen);
-		
 		return svar;
 	}
 
