@@ -4,7 +4,7 @@ import java.awt.EventQueue;
 
 import javax.mail.MessagingException;
 
-import kmail.auth.Authorisation;
+import kmail.auth.Credentials;
 import kmail.ui.inbox.InboxWindow;
 
 /**
@@ -38,7 +38,7 @@ public class KMailClient {
 	 *             usually if the login credentials are invalid.
 	 */
 	public void login(String username, String password) throws MessagingException {
-		Authorisation auth = new Authorisation(username, password);
+		Credentials auth = new Credentials(username, password);
 
 		InboxWindow frame = new InboxWindow(this, auth);
 		//Close the password dialog

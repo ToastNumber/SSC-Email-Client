@@ -18,18 +18,24 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 
-import kmail.auth.Authorisation;
+import kmail.auth.Credentials;
 
+/**
+ * Provides functions for sending emails.
+ * 
+ * @author Kelsey McKenna
+ *
+ */
 public class Sender {
 	private Session session;
 	private static final String SMTP_HOST = "smtp.gmail.com";
-	private Authorisation auth;
-	
-	public Sender(Authorisation auth) {
+	private Credentials auth;
+
+	public Sender(Credentials auth) {
 		this.auth = auth;
 		this.session = getSMTPSession();
 	}
-	
+
 	/**
 	 * @param session
 	 * @param from
@@ -49,38 +55,50 @@ public class Sender {
 	 * @throws AddressException
 	 * @throws MessagingException
 	 */
-	public MimeMessage constructMimeMessage(String to, String cc,
-			String subject, String content, File[] attachments) throws AddressException, MessagingException {
+	public MimeMessage constructMimeMessage(String to, String cc, String subject, String content, File[] attachments)
+			throws AddressException, MessagingException {
 		MimeMessage message = new MimeMessage(session);
-		
+
 		message.setFrom(new InternetAddress(auth.getUsername()));
 
+		// Set the 'to' recipients
 		message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
-		if (cc.length() > 0) message.setRecipients(Message.RecipientType.CC, InternetAddress.parse(cc));
+		// If there are Cc recipients, then add them
+		if (cc.length() > 0) {
+			message.setRecipients(Message.RecipientType.CC, InternetAddress.parse(cc));
+		}
 
 		message.setSubject(subject);
 
-		
-		if (attachments == null) {
+		// If there are no attachments
+		if (attachments == null || attachments.length == 0) {
+			// Simply add the message content
 			message.setText(content);
 		} else {
 			MimeBodyPart messageBodyPart = new MimeBodyPart();
+			// The the first body part to the be the message content
 			messageBodyPart.setText(content);
 
 			ArrayList<MimeBodyPart> attachmentsBodyParts = new ArrayList<>();
-			
+
+			// Go through each attachment
 			for (File f : attachments) {
+				// Create the data source for the attachment
 				DataSource attachmentSource = new FileDataSource(f);
 				MimeBodyPart attachmentBodyPart = new MimeBodyPart();
+				// Give the body part a handler
 				attachmentBodyPart.setDataHandler(new DataHandler(attachmentSource));
 				attachmentBodyPart.setFileName(f.getName());
-				
+
+				// Add this body part containing the attachment to the list of
+				// attachment body parts.
 				attachmentsBodyParts.add(attachmentBodyPart);
 			}
-			
+
+			// Now add all the parts to the email
 			Multipart multipart = new MimeMultipart();
 			multipart.addBodyPart(messageBodyPart);
-			
+
 			for (MimeBodyPart c : attachmentsBodyParts) {
 				multipart.addBodyPart(c);
 			}
@@ -88,18 +106,31 @@ public class Sender {
 			message.setContent(multipart);
 		}
 
+		// Save changes to the message before it is returned
 		message.saveChanges();
 
 		return message;
 	}
-	
+
+	/**
+	 * Send the specified message from the email account for this Sender.
+	 * 
+	 * @param message
+	 *            the message to be sent
+	 * @throws MessagingException
+	 */
 	public void sendEmail(MimeMessage message) throws MessagingException {
 		Transport tr = session.getTransport("smtp");
 		tr.connect(SMTP_HOST, auth.getUsername(), auth.getPassword());
 		tr.sendMessage(message, message.getAllRecipients());
 		tr.close();
 	}
-	
+
+	/**
+	 * Get the SMTPSession in order to send emails
+	 * 
+	 * @return
+	 */
 	private Session getSMTPSession() {
 		Properties props = System.getProperties();
 		props.put("mail.smtp.auth", "true");

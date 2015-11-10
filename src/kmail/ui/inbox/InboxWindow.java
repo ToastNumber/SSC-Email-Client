@@ -36,7 +36,7 @@ import javax.swing.event.ListSelectionListener;
 import kmail.Filter;
 import kmail.Grabber;
 import kmail.Util;
-import kmail.auth.Authorisation;
+import kmail.auth.Credentials;
 import kmail.ui.KMailClient;
 import kmail.ui.send.SendWindow;
 import javax.swing.JCheckBox;
@@ -90,7 +90,7 @@ public class InboxWindow extends JFrame {
 	 * 
 	 * @throws MessagingException
 	 */
-	public InboxWindow(KMailClient handler, Authorisation auth) throws MessagingException {
+	public InboxWindow(KMailClient handler, Credentials auth) throws MessagingException {
 		this.grabber = new Grabber(auth);
 		loadFiltersFromFile();
 
@@ -380,23 +380,37 @@ public class InboxWindow extends JFrame {
 	private void displayMessageContent(int index) throws MessagingException, IOException {
 		Message message = messages[index];
 
-		String svar = String.format("<html>" + "<h1 style='font-family: helvetica'>%s</h1>" + "<p style='font-family: arial'>From: %s</p>"
-				+ "<p style='font-family: arial'>Received: %s</p>" + "<br>" + "<hr size=2>" + "<br>", Grabber.getSubject(message),
-				Grabber.getFrom(message), Grabber.getFullDate(message));
+		// Set up the initial formatting
+		// H1 Subject
+		// Arial paragraph for 'From'
+		// Arial paragraph for 'Received'
+		// Horizontal line
+		String svar = String.format("<html>" + 
+				"<h1 style='font-family: helvetica'>%s</h1>" + 
+				"<p style='font-family: arial'>From: %s</p>" + 
+				"<p style='font-family: arial'>Received: %s</p>" + 
+				"<br>" + 
+				"<hr size=2>" + 
+				"<br>", 
+				Grabber.getSubject(message),
+				Grabber.getFrom(message), 
+				Grabber.getFullDate(message));
 
 		svar += "<span style='font-family: arial'>";
 
 		if (message.getContentType().contains("TEXT/PLAIN")) {
+			// In order to display correctly, replace new line characters with HTML <br> tag
 			svar += message.getContent().toString().replaceAll("\n", "<br>");
 		} else {
-			// How to get parts from multiple body parts of MIME message
 			Multipart multipart = (Multipart) message.getContent();
 
 			for (int i = 0; i < multipart.getCount(); i++) {
 				BodyPart bodyPart = multipart.getBodyPart(i);
-				// If the part is a plain text message, then print it out.
+				
 				if (bodyPart.getContentType().contains("TEXT/PLAIN")) {
 					String temp = bodyPart.getContent().toString();
+					
+					// In order to display correctly, replace new line characters with HTML <br> tag
 					svar += temp.replaceAll("\n", "<br>");
 				}
 			}
@@ -405,6 +419,7 @@ public class InboxWindow extends JFrame {
 		svar += "</span></html>";
 
 		txtMessageContent.setText(svar);
+		// Reset the scroll bar to the top of the window
 		txtMessageContent.setCaretPosition(0);
 	}
 

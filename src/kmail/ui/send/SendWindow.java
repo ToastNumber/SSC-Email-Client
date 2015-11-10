@@ -20,7 +20,7 @@ import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 
 import kmail.Sender;
-import kmail.auth.Authorisation;
+import kmail.auth.Credentials;
 
 import com.jgoodies.forms.layout.ColumnSpec;
 import com.jgoodies.forms.layout.FormLayout;
@@ -43,7 +43,7 @@ public class SendWindow extends JFrame {
 	private JButton btnAttach;
 	private JLabel lblAttached;
 
-	public SendWindow(Authorisation auth) {
+	public SendWindow(Credentials auth) {
 		Sender sender = new Sender(auth);
 		
 		setTitle("KMail - Create Message");

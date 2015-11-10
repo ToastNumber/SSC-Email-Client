@@ -21,7 +21,7 @@ import javax.mail.search.HeaderTerm;
 import javax.mail.search.OrTerm;
 import javax.mail.search.SearchTerm;
 
-import kmail.auth.Authorisation;
+import kmail.auth.Credentials;
 
 import com.sun.mail.imap.IMAPFolder;
 
@@ -42,7 +42,7 @@ public class Grabber {
 	 *            the credentials for the email account
 	 * @throws MessagingException
 	 */
-	public Grabber(Authorisation auth) throws MessagingException {
+	public Grabber(Credentials auth) throws MessagingException {
 		Session session = getIMAPSession(auth.getUsername(), auth.getPassword());
 
 		store = session.getStore("imaps");
@@ -139,6 +139,7 @@ public class Grabber {
 	 *         <b>false</b> otherwise
 	 */
 	public boolean searchMessage(Message m, String keyword) {
+		// Convert the keyword to lowercase for searching
 		final String lowerKeyword = keyword.toLowerCase();
 
 		try {
@@ -146,26 +147,34 @@ public class Grabber {
 			boolean seen = flags.contains(Flag.SEEN);
 			boolean svar = false;
 
+			// If the subject contains the keyword
 			if (m.getSubject().toLowerCase().contains(lowerKeyword)) {
+				// Then set the result to true
 				svar = true;
 			} else {
+				// If the content is plain text
 				if (m.getContentType().toUpperCase().contains("TEXT/PLAIN")) {
+					// Then just check if it contains the keyword
 					svar = m.getContent().toString().toLowerCase().contains(lowerKeyword);
 				} else {
-					// How to get parts from multiple body parts of MIME message
+					// Get the different parts of the content
 					Multipart multipart = (Multipart) m.getContent();
 
 					for (int i = 0; i < multipart.getCount(); i++) {
 						BodyPart bodyPart = multipart.getBodyPart(i);
-						// If the part is a plain text message, then print it
-						// out.
+
+						// If the current part of the message is plain text
 						if (bodyPart.getContentType().toUpperCase().contains("TEXT/PLAIN")) {
-							if (bodyPart.getContent().toString().toLowerCase().contains(lowerKeyword)) svar = true;
+							// Then check if it contains the keyword
+							if (bodyPart.getContent().toString().toLowerCase().contains(lowerKeyword)) {
+								svar = true;
+							}
 						}
 					}
 				}
 			}
 
+			// Reset the seen-state of the message
 			m.setFlag(Flag.SEEN, seen);
 
 			return svar;
@@ -175,6 +184,7 @@ public class Grabber {
 			e.printStackTrace();
 		}
 
+		// If there was an exception, just return false.
 		return false;
 	}
 
