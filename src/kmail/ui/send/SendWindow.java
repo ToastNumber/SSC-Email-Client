@@ -132,10 +132,13 @@ public class SendWindow extends JFrame {
 		btnSend.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				try {
-					// Construct the MIMEMessage from the information entered by the user
+					// Construct the MIMEMessage from the information entered by
+					// the user
 					MimeMessage message = sender.constructMimeMessage(fldTo.getText(), fldCc.getText(), fldSubject.getText(),
 							fldBody.getText(), attachments);
 					sender.sendEmail(message);
+
+					// Close the window and dipose it
 					setVisible(false);
 					dispose();
 				} catch (AddressException e1) {
@@ -145,16 +148,19 @@ public class SendWindow extends JFrame {
 				}
 			}
 		});
-
 		btnSend.setFocusable(false);
 		contentPane.add(btnSend, "4, 14, center, default");
 	}
 
+	/**
+	 * Refreshes the list of attachment names displayed in the window.
+	 */
 	private void refreshAttachmentsList() {
 		String svar = "";
 		for (int i = 0; i < attachments.length; ++i) {
 			svar += attachments[i].getName();
 
+			// Only add a comma if this is not the last attachment name
 			if (i < attachments.length - 1) svar += ", ";
 		}
 
