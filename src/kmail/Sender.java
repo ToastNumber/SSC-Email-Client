@@ -49,8 +49,8 @@ public class Sender {
 	 *            the subject for the email
 	 * @param content
 	 *            the text content of the email
-	 * @param attachment
-	 *            the attachment file for the email
+	 * @param attachments
+	 *            the attachments for the email
 	 * @return a MIME message constructed using the given information
 	 * @throws AddressException
 	 * @throws MessagingException
