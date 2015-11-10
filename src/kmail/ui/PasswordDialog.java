@@ -22,6 +22,10 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 
+/*
+ * Many thanks to http://stackoverflow.com/users/2587435/peeskillet for the
+ * code for the password dialog
+ */
 public class PasswordDialog extends JDialog implements KeyListener {
     private final JLabel jlblEmail = new JLabel("Email");
     private final JLabel jlblPassword = new JLabel("Password");

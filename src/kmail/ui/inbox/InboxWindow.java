@@ -40,6 +40,12 @@ import kmail.auth.Authorisation;
 import kmail.ui.KMailClient;
 import kmail.ui.send.SendWindow;
 
+/**
+ * A JFrame that shows the emails in the user's inbox and the body of the email.
+ * There is a search option, 
+ * @author Kelsey McKenna
+ *
+ */
 public class InboxWindow extends JFrame {
 
 	private Grabber grabber;
@@ -127,6 +133,7 @@ public class InboxWindow extends JFrame {
 		panel.add(lblSearch);
 
 		fldSearch = new JTextField(20);
+		fldSearch.setToolTipText("Press enter to search");
 		fldSearch.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				try {
