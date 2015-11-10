@@ -42,7 +42,9 @@ import kmail.ui.send.SendWindow;
 
 /**
  * A JFrame that shows the emails in the user's inbox and the body of the email.
- * There is a search option, 
+ * All features of the program are either directly accessible in this window, or
+ * the feature can be accessed by navigating from this window.
+ * 
  * @author Kelsey McKenna
  *
  */
@@ -50,19 +52,29 @@ public class InboxWindow extends JFrame {
 
 	private Grabber grabber;
 	private SendWindow sendWindow;
+	// The list of filters that can currently be applied
 	private ArrayList<Filter> filters;
 
 	private JSplitPane splitPane;
 	private JPanel contentPane;
+	// The current messages in the inbox
 	private Message[] messages;
 	private DefaultListModel<String> model = new DefaultListModel<>();
 	private JList<String> messageList;
+	// Used to stop the ListSelectionListener from showing
+	// the next message when the inbox is being refreshed
 	private boolean refreshing = false;
+	// A scroll pane for the list of inbox messages
 	private JScrollPane paneMessageList;
+	// A text pane for the content of an email
 	private JTextPane txtMessageContent;
+	// A scroll pane to hold the text pane for the content of a message
 	private JScrollPane paneMessageContent;
-	private JPanel panel;
+	// A panel for the buttons, search fields etc.
+	private JPanel controlPanel;
+	// The label beside the search field
 	private JLabel lblSearch;
+	// The field in which the user can enter a search keyword
 	private JTextField fldSearch;
 	private JButton btnRead;
 	private JButton btnRefresh;
@@ -71,7 +83,7 @@ public class InboxWindow extends JFrame {
 	private JButton btnCompose;
 
 	/**
-	 * Create the frame.
+	 * Create the frame and add event handlers.
 	 * 
 	 * @throws MessagingException
 	 */
@@ -95,17 +107,6 @@ public class InboxWindow extends JFrame {
 		messageList = new JList<>(model);
 		messageList.setCellRenderer(new MessageStripRenderer());
 		messageList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-
-		paneMessageList = new JScrollPane(messageList);
-		splitPane.setLeftComponent(paneMessageList);
-
-		txtMessageContent = new JTextPane();
-		txtMessageContent.setFont(new Font("arial", 0, 14));
-		txtMessageContent.setEditable(false);
-		txtMessageContent.setContentType("text/html");
-
-		paneMessageContent = new JScrollPane(txtMessageContent);
-		splitPane.setRightComponent(paneMessageContent);
 		messageList.addListSelectionListener(new ListSelectionListener() {
 			@Override
 			public void valueChanged(ListSelectionEvent e) {
@@ -125,12 +126,23 @@ public class InboxWindow extends JFrame {
 			}
 		});
 
-		panel = new JPanel();
-		contentPane.add(panel, BorderLayout.SOUTH);
-		panel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
+		paneMessageList = new JScrollPane(messageList);
+		splitPane.setLeftComponent(paneMessageList);
+
+		txtMessageContent = new JTextPane();
+		txtMessageContent.setFont(new Font("arial", 0, 14));
+		txtMessageContent.setEditable(false);
+		txtMessageContent.setContentType("text/html");
+
+		paneMessageContent = new JScrollPane(txtMessageContent);
+		splitPane.setRightComponent(paneMessageContent);
+
+		controlPanel = new JPanel();
+		contentPane.add(controlPanel, BorderLayout.SOUTH);
+		controlPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
 
 		lblSearch = new JLabel("Search: ");
-		panel.add(lblSearch);
+		controlPanel.add(lblSearch);
 
 		fldSearch = new JTextField(20);
 		fldSearch.setToolTipText("Press enter to search");
@@ -148,7 +160,7 @@ public class InboxWindow extends JFrame {
 				}
 			}
 		});
-		panel.add(fldSearch);
+		controlPanel.add(fldSearch);
 
 		btnCompose = new JButton("Compose");
 		btnCompose.addActionListener(new ActionListener() {
@@ -158,7 +170,7 @@ public class InboxWindow extends JFrame {
 			}
 		});
 		btnCompose.setFocusable(false);
-		panel.add(btnCompose);
+		controlPanel.add(btnCompose);
 
 		btnRead = new JButton("Unread/Read");
 		btnRead.addActionListener(new ActionListener() {
@@ -176,7 +188,7 @@ public class InboxWindow extends JFrame {
 			}
 		});
 		btnRead.setFocusable(false);
-		panel.add(btnRead);
+		controlPanel.add(btnRead);
 
 		btnRefresh = new JButton("Refresh");
 		btnRefresh.addActionListener(new ActionListener() {
@@ -189,7 +201,7 @@ public class InboxWindow extends JFrame {
 			}
 		});
 		btnRefresh.setFocusable(false);
-		panel.add(btnRefresh);
+		controlPanel.add(btnRefresh);
 
 		btnFilterOptions = new JButton("Filter Options");
 		btnFilterOptions.addActionListener(new ActionListener() {
@@ -215,7 +227,7 @@ public class InboxWindow extends JFrame {
 			}
 		});
 		btnFilterOptions.setFocusable(false);
-		panel.add(btnFilterOptions);
+		controlPanel.add(btnFilterOptions);
 
 		btnLogout = new JButton("Logout");
 		btnLogout.addActionListener(new ActionListener() {
@@ -231,7 +243,7 @@ public class InboxWindow extends JFrame {
 			}
 		});
 		btnLogout.setFocusable(false);
-		panel.add(btnLogout);
+		controlPanel.add(btnLogout);
 
 		try {
 			refreshInbox();
@@ -240,6 +252,9 @@ public class InboxWindow extends JFrame {
 		}
 	}
 
+	/**
+	 * Loads the filters stored in the "filter-rules.txt" file.
+	 */
 	private void loadFiltersFromFile() {
 		filters = new ArrayList<Filter>();
 
@@ -250,6 +265,7 @@ public class InboxWindow extends JFrame {
 				BufferedReader reader = new BufferedReader(new FileReader(f));
 
 				String line;
+				// While not EOF
 				while ((line = reader.readLine()) != null) {
 					filters.add(Filter.parse(line));
 				}
@@ -261,6 +277,12 @@ public class InboxWindow extends JFrame {
 		}
 	}
 
+	/**
+	 * Add the specified filter to the list of filters, and write it to file
+	 * 
+	 * @param filter
+	 *            the filter to be added
+	 */
 	private void addFilter(Filter filter) {
 		filters.add(filter);
 
@@ -275,19 +297,33 @@ public class InboxWindow extends JFrame {
 		}
 	}
 
+	/**
+	 * Refresh the emails in the inbox, and apply the filters/flags to any new
+	 * emails. Also reset the text in the search field.
+	 * 
+	 * @throws MessagingException
+	 */
 	private void refreshInbox() throws MessagingException {
 		grabber.applyFiltersToUnseen(filters);
 		filterInbox("");
 		fldSearch.setText("");
 	}
 
+	/**
+	 * Filter the inbox to include only those emails that contain the specified
+	 * keyword.
+	 * 
+	 * @param keyword
+	 *            the search term
+	 * @throws MessagingException
+	 */
 	private void filterInbox(String keyword) throws MessagingException {
 		refreshing = true;
 
 		if (keyword.isEmpty()) {
 			messages = grabber.getInboxMessages();
 		} else {
-			messages = grabber.search(keyword, true);
+			messages = grabber.search(keyword);
 		}
 
 		this.messageList.clearSelection();
@@ -302,6 +338,15 @@ public class InboxWindow extends JFrame {
 		refreshing = false;
 	}
 
+	/**
+	 * Refresh the strip for the specified message. This may be called when the
+	 * seen status of a message has changed, or when its flag has been changed
+	 * etc.
+	 * 
+	 * @param i
+	 *            the index of the message
+	 * @throws MessagingException
+	 */
 	private void refreshMessageStrip(int i) throws MessagingException {
 		Message m = messages[i];
 
@@ -314,6 +359,15 @@ public class InboxWindow extends JFrame {
 		model.set(i, Util.constructMessageStrip(from, subject, dateSent, seen, userFlags));
 	}
 
+	/**
+	 * Show the content of the specified message in the txtMessageContent text
+	 * pane.
+	 * 
+	 * @param index
+	 *            the index of the message
+	 * @throws MessagingException
+	 * @throws IOException
+	 */
 	private void displayMessageContent(int index) throws MessagingException, IOException {
 		Message message = messages[index];
 
