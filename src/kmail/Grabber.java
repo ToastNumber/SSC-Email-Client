@@ -16,10 +16,11 @@ import javax.mail.Multipart;
 import javax.mail.Session;
 import javax.mail.Store;
 import javax.mail.internet.InternetAddress;
+import javax.mail.search.AndTerm;
 import javax.mail.search.BodyTerm;
+import javax.mail.search.FlagTerm;
 import javax.mail.search.HeaderTerm;
 import javax.mail.search.OrTerm;
-import javax.mail.search.SearchTerm;
 
 import kmail.auth.Credentials;
 
@@ -96,36 +97,35 @@ public class Grabber {
 	public void applyFiltersToUnseen(ArrayList<Filter> filters) throws MessagingException {
 		long t0 = System.currentTimeMillis();
 
-		Message[] unseenMessages = inbox.search(new SearchTerm() {
-			@Override
-			public boolean match(Message m) {
-				try {
-					Flags flags = m.getFlags();
-					return !flags.contains(Flag.SEEN);
-				} catch (MessagingException e) {
-					e.printStackTrace();
-				}
-
-				return false;
-			}
-		});
-
+		inbox.expunge();
+		
+		FlagTerm unseenSearch = new FlagTerm(new Flags(Flag.SEEN), false);
+		
 		for (Filter filter : filters) {
 			Flags customFlag = new Flags(filter.getFlagName());
+			
 			String[] keywords = filter.getKeywords();
-
-			for (Message msg : unseenMessages) {
-				for (String keyword : keywords) {
-					if (searchMessage(msg, keyword)) {
-						msg.setFlags(customFlag, true);
-					}
-				}
+			AndTerm[] andTerms = new AndTerm[keywords.length];
+			
+			for (int i = 0; i < keywords.length; ++i) {
+				HeaderTerm headerTerm = new HeaderTerm("", keywords[i]);
+				BodyTerm bodyTerm = new BodyTerm(keywords[i]);
+				
+				andTerms[i] = new AndTerm(unseenSearch, new OrTerm(headerTerm, bodyTerm));
 			}
+			
+			OrTerm searchTerm = new OrTerm(andTerms);
+			
+			Message[] relevantMessages = inbox.search(searchTerm);
+			
+			inbox.setFlags(relevantMessages, customFlag, true);
 		}
-
+		
+		
 		long t1 = System.currentTimeMillis();
 		System.out.println((t1 - t0) / 1000.);
 	}
+
 
 	/**
 	 * Searchs the message for the keyword. Note: the seen-state of the message

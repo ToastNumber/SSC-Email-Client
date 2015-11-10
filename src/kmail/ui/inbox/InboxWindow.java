@@ -39,7 +39,6 @@ import kmail.Util;
 import kmail.auth.Credentials;
 import kmail.ui.KMailClient;
 import kmail.ui.send.SendWindow;
-import javax.swing.JCheckBox;
 
 /**
  * A JFrame that shows the emails in the user's inbox and the body of the email.
@@ -82,8 +81,6 @@ public class InboxWindow extends JFrame {
 	private JButton btnFilterOptions;
 	private JButton btnLogout;
 	private JButton btnCompose;
-	// If ticked, unseen messages will be inspected for any applying filters.
-	private JCheckBox chckbxScanNew;
 
 	/**
 	 * Create the frame and add event handlers.
@@ -245,10 +242,6 @@ public class InboxWindow extends JFrame {
 				}
 			}
 		});
-
-		chckbxScanNew = new JCheckBox("Scan New Emails");
-		chckbxScanNew.setFocusable(false);
-		controlPanel.add(chckbxScanNew);
 		btnLogout.setFocusable(false);
 		controlPanel.add(btnLogout);
 
@@ -311,9 +304,7 @@ public class InboxWindow extends JFrame {
 	 * @throws MessagingException
 	 */
 	private void refreshInbox() throws MessagingException {
-		if (chckbxScanNew.isSelected()) {
-			grabber.applyFiltersToUnseen(filters);
-		}
+		grabber.applyFiltersToUnseen(filters);
 		filterInbox("");
 		fldSearch.setText("");
 	}
