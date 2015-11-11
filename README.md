@@ -35,3 +35,7 @@ public static int sum(int[] arr) {
   return svar;
 }
 ```
+
+Attachments
+-----------
+The firewall may block certain files from being attached, e.g. `.jar` files.
