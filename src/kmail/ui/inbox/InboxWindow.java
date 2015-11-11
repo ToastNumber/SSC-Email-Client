@@ -367,6 +367,8 @@ public class InboxWindow extends JFrame {
 	 * Show the content of the specified message in the txtMessageContent text
 	 * pane.
 	 * 
+	 * Many thanks to Dr Shan He for excerpts of the following code.
+	 * 
 	 * @param index
 	 *            the index of the message
 	 * @throws MessagingException
@@ -386,11 +388,12 @@ public class InboxWindow extends JFrame {
 
 		svar += "<span style='font-family: arial'>";
 
-		if (message.getContentType().contains("TEXT/PLAIN")) {
+		String contentType = message.getContentType().toUpperCase();
+		if (contentType.contains("TEXT/PLAIN")) {
 			// In order to display correctly, replace new line characters with
 			// HTML <br> tag
 			svar += message.getContent().toString().replaceAll("\n", "<br>");
-		} else {
+		} else if (contentType.contains("MULTIPART")) {
 			Multipart multipart = (Multipart) message.getContent();
 
 			for (int i = 0; i < multipart.getCount(); i++) {
@@ -404,6 +407,8 @@ public class InboxWindow extends JFrame {
 					svar += temp.replaceAll("\n", "<br>");
 				}
 			}
+		} else {
+			svar += "<i>Cannot display email content</i>";
 		}
 
 		svar += "</span></html>";
@@ -412,5 +417,4 @@ public class InboxWindow extends JFrame {
 		// Reset the scroll bar to the top of the window
 		txtMessageContent.setCaretPosition(0);
 	}
-
 }

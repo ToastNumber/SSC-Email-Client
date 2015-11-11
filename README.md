@@ -10,6 +10,10 @@ Searching email that contain the specified string in the header or body of the m
 5. A simple rule-based email filter to set custom flags to emails based on some keywords set by the user. For example, the user can set the flag of an email as ‘spam’ if its body contains “lucky winner”. The email client can display these custom flags.
 6. A Graphic User Interface (GUI) for all the features listed above.
 
+Limitations
+-----------
+Currently, only emails with `TEXT/PLAIN` or `MULTIPART` as the content type can be displayed. For example, `TEXT/HTML` cannot be displayed.
+
 `filter-rules.txt`
 ------------------
 This file stores the current filtering/flagging rules for the client. For example, the file might store
