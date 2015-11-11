@@ -85,6 +85,10 @@ public class InboxWindow extends JFrame {
 	/**
 	 * Create the frame and add event handlers.
 	 * 
+	 * @param handler
+	 *            the object that launched this inbox window
+	 * @param auth
+	 *            the credentials (username and password) for the email account.
 	 * @throws MessagingException
 	 */
 	public InboxWindow(KMailClient handler, Credentials auth) throws MessagingException {
@@ -376,32 +380,27 @@ public class InboxWindow extends JFrame {
 		// Arial paragraph for 'From'
 		// Arial paragraph for 'Received'
 		// Horizontal line
-		String svar = String.format("<html>" + 
-				"<h1 style='font-family: helvetica'>%s</h1>" + 
-				"<p style='font-family: arial'>From: %s</p>" + 
-				"<p style='font-family: arial'>Received: %s</p>" + 
-				"<br>" + 
-				"<hr size=2>" + 
-				"<br>", 
-				Grabber.getSubject(message),
-				Grabber.getFrom(message), 
-				Grabber.getFullDate(message));
+		String svar = String.format("<html>" + "<h1 style='font-family: helvetica'>%s</h1>" + "<p style='font-family: arial'>From: %s</p>"
+				+ "<p style='font-family: arial'>Received: %s</p>" + "<br>" + "<hr size=2>" + "<br>", Grabber.getSubject(message),
+				Grabber.getFrom(message), Grabber.getFullDate(message));
 
 		svar += "<span style='font-family: arial'>";
 
 		if (message.getContentType().contains("TEXT/PLAIN")) {
-			// In order to display correctly, replace new line characters with HTML <br> tag
+			// In order to display correctly, replace new line characters with
+			// HTML <br> tag
 			svar += message.getContent().toString().replaceAll("\n", "<br>");
 		} else {
 			Multipart multipart = (Multipart) message.getContent();
 
 			for (int i = 0; i < multipart.getCount(); i++) {
 				BodyPart bodyPart = multipart.getBodyPart(i);
-				
+
 				if (bodyPart.getContentType().contains("TEXT/PLAIN")) {
 					String temp = bodyPart.getContent().toString();
-					
-					// In order to display correctly, replace new line characters with HTML <br> tag
+
+					// In order to display correctly, replace new line
+					// characters with HTML <br> tag
 					svar += temp.replaceAll("\n", "<br>");
 				}
 			}
