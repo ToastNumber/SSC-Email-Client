@@ -115,6 +115,8 @@ public class Sender {
 	/**
 	 * Send the specified message from the email account for this Sender.
 	 * 
+	 * Many thanks to Dr Shan He for excerpts of the following code.
+	 * 
 	 * @param message
 	 *            the message to be sent
 	 * @throws MessagingException
@@ -128,6 +130,8 @@ public class Sender {
 
 	/**
 	 * Get the SMTPSession in order to send emails
+	 * 
+	 * Many thanks to Dr Shan He for excerpts of the following code.
 	 * 
 	 * @return
 	 */

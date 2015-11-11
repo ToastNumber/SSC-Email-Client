@@ -36,6 +36,8 @@ public class Grabber {
 	/**
 	 * Opens the inbox of the email account with the specified credentials.
 	 * 
+	 * Many thanks to Dr Shan He for excerpts of the following code.
+	 * 
 	 * @param auth
 	 *            the credentials for the email account
 	 * @throws MessagingException
@@ -153,6 +155,9 @@ public class Grabber {
 	}
 
 	/**
+	 * Many thanks to Dr Shan He for excerpts of the following code.
+	 * Get the IMAP session for the account.
+	 * 
 	 * @param username
 	 *            the username for the email account
 	 * @param password
